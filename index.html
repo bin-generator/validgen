@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BIN Generator</title>
+  <link rel="icon" href="https://img.icons8.com/color/96/bank-card-back-side.png" type="image/png" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #141e30, #243b55);
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .wrapper {
+      max-width: 600px;
+      margin: auto;
+      flex: 1;
+    }
+    .header {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 22px; margin-bottom: 10px; }
+    .header p { font-size: 14px; color: #ccc; }
+    .container {
+      background: rgba(0, 0, 0, 0.85);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+    input, button, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background: #00c6ff;
+      background: linear-gradient(to right, #0072ff, #00c6ff);
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { opacity: 0.9; }
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      white-space: pre;
+      margin-top: 10px;
+    }
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 13px;
+      color: #ccc;
+    }
+    @media (max-width: 600px) {
+      .header h1 { font-size: 18px; }
+      .header p { font-size: 13px; }
+      h2 { font-size: 20px; }
+      input, button, textarea { font-size: 14px; padding: 10px; }
+      textarea { min-height: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>Random Test Credit Card Numbers Generator</h1>
+      <p>Generate random test credit card numbers for testing, development, validation and/or verification purposes.</p>
+    </div>
+    <div class="container">
+      <h2>BIN Generator</h2>
+      <input type="text" id="bin" placeholder="Masukkan BIN (contoh: 453958)" maxlength="16" />
+      <input type="number" id="count" placeholder="Berapa banyak kartu?" value="10" min="1" max="1000" />
+      <button onclick="generate()">Generate</button>
+      <textarea id="output" readonly placeholder="Hasil kartu akan muncul di sini..."></textarea>
+      <button onclick="copyAll()">Salin Semua</button>
+    </div>
+  </div>
+  <footer>
+    &copy; <span id="year"></span> BIN Generator. Hak cipta dilindungi.
+  </footer>
+  <script>
+    function luhnCheck(card) {
+      let sum = 0;
+      let shouldDouble = false;
+      for (let i = card.length - 1; i >= 0; i--) {
+        let digit = parseInt(card[i]);
+        if (shouldDouble) {
+          digit *= 2;
+          if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+        shouldDouble = !shouldDouble;
+      }
+      return sum % 10 === 0;
+    }
+
+    function generateCard(bin) {
+      let base = bin;
+      while (base.length < 15) {
+        base += Math.floor(Math.random() * 10);
+      }
+      for (let d = 0; d <= 9; d++) {
+        const candidate = base + d;
+        if (luhnCheck(candidate)) return candidate;
+      }
+      return null;
+    }
+
+    function randomDate() {
+      const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+      const year = new Date().getFullYear() + Math.floor(Math.random() * 6) + 1;
+      return { month, year };
+    }
+
+    function randomCVV() {
+      return String(Math.floor(100 + Math.random() * 900));
+    }
+
+    function generate() {
+      const bin = document.getElementById('bin').value.trim();
+      const count = parseInt(document.getElementById('count').value);
+      const output = document.getElementById('output');
+      output.value = '';
+
+      if (!/^\d{6,16}$/.test(bin)) {
+        output.value = 'BIN harus berupa angka 6 hingga 16 digit.';
+        return;
+      }
+
+      const cards = new Set();
+      const result = [];
+      let attempts = 0;
+      while (cards.size < count && attempts < count * 10) {
+        const card = generateCard(bin);
+        attempts++;
+        if (card && !cards.has(card) && luhnCheck(card)) {
+          cards.add(card);
+          const { month, year } = randomDate();
+          const cvv = randomCVV();
+          result.push(`${card}|${month}|${year}|${cvv}`);
+        }
+      }
+
+      if (cards.size < count) {
+        result.push(`# Gagal generate ${count - cards.size} kartu valid setelah ${attempts} percobaan.`);
+      }
+
+      output.value = result.join('\n');
+    }
+
+    function copyAll() {
+      const output = document.getElementById('output');
+      output.select();
+      document.execCommand('copy');
+      alert("Semua data berhasil disalin!");
+    }
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
